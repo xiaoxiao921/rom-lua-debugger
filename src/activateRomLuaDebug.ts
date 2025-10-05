@@ -1,28 +1,22 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
-/*
- * activateMockDebug.ts containes the shared extension code that can be executed both in node.js and the browser.
- */
+// Containes the shared extension code that can be executed both in node.js and the browser.
 
 'use strict';
 
 import * as vscode from 'vscode';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
-import { MockDebugSession } from './mockDebug';
-import { FileAccessor } from './mockRuntime';
+import { RomLuaDebugSession } from './romLuaDebug';
 
-export function activateMockDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
+export function activateRomLuaDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('extension.mock-debug.runEditorContents', (resource: vscode.Uri) => {
+		vscode.commands.registerCommand('extension.rom-lua-debugger.runEditorContents', (resource: vscode.Uri) => {
 			let targetResource = resource;
 			if (!targetResource && vscode.window.activeTextEditor) {
 				targetResource = vscode.window.activeTextEditor.document.uri;
 			}
 			if (targetResource) {
 				vscode.debug.startDebugging(undefined, {
-					type: 'mock',
+					type: 'rom-lua-debugger',
 					name: 'Run File',
 					request: 'launch',
 					program: targetResource.fsPath
@@ -31,14 +25,14 @@ export function activateMockDebug(context: vscode.ExtensionContext, factory?: vs
 				);
 			}
 		}),
-		vscode.commands.registerCommand('extension.mock-debug.debugEditorContents', (resource: vscode.Uri) => {
+		vscode.commands.registerCommand('extension.rom-lua-debugger.debugEditorContents', (resource: vscode.Uri) => {
 			let targetResource = resource;
 			if (!targetResource && vscode.window.activeTextEditor) {
 				targetResource = vscode.window.activeTextEditor.document.uri;
 			}
 			if (targetResource) {
 				vscode.debug.startDebugging(undefined, {
-					type: 'mock',
+					type: 'rom-lua-debugger',
 					name: 'Debug File',
 					request: 'launch',
 					program: targetResource.fsPath,
@@ -46,45 +40,20 @@ export function activateMockDebug(context: vscode.ExtensionContext, factory?: vs
 				});
 			}
 		}),
-		vscode.commands.registerCommand('extension.mock-debug.toggleFormatting', (variable) => {
-			const ds = vscode.debug.activeDebugSession;
-			if (ds) {
-				ds.customRequest('toggleFormatting');
-			}
-		})
 	);
 
-	context.subscriptions.push(vscode.commands.registerCommand('extension.mock-debug.getProgramName', config => {
-		return vscode.window.showInputBox({
-			placeHolder: "Please enter the name of a markdown file in the workspace folder",
-			value: "readme.md"
-		});
-	}));
+	// register a configuration provider for 'rom-lua-debugger' debug type
+	const provider = new RomLuaConfigurationProvider();
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('rom-lua-debugger', provider));
 
-	// register a configuration provider for 'mock' debug type
-	const provider = new MockConfigurationProvider();
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', provider));
-
-	// register a dynamic configuration provider for 'mock' debug type
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', {
+	// register a dynamic configuration provider for 'rom-lua-debugger' debug type
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('rom-lua-debugger', {
 		provideDebugConfigurations(folder: WorkspaceFolder | undefined): ProviderResult<DebugConfiguration[]> {
 			return [
 				{
-					name: "Dynamic Launch",
+					name: "Return Of Modding Lua Debugger Launch",
 					request: "launch",
-					type: "mock",
-					program: "${file}"
-				},
-				{
-					name: "Another Dynamic Launch",
-					request: "launch",
-					type: "mock",
-					program: "${file}"
-				},
-				{
-					name: "Mock Launch",
-					request: "launch",
-					type: "mock",
+					type: "rom-lua-debugger",
 					program: "${file}"
 				}
 			];
@@ -94,14 +63,13 @@ export function activateMockDebug(context: vscode.ExtensionContext, factory?: vs
 	if (!factory) {
 		factory = new InlineDebugAdapterFactory();
 	}
-	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('mock', factory));
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('rom-lua-debugger', factory));
 	if ('dispose' in factory) {
-		context.subscriptions.push(factory);
 	}
 
 	// override VS Code's default implementation of the debug hover
 	// here we match only Mock "variables", that are words starting with an '$'
-	context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider('markdown', {
+	context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider('lua', {
 		provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
 
 			const VARIABLE_REGEXP = /\$[a-z][a-z0-9]*/ig;
@@ -120,9 +88,9 @@ export function activateMockDebug(context: vscode.ExtensionContext, factory?: vs
 	}));
 
 	// override VS Code's default implementation of the "inline values" feature"
-	context.subscriptions.push(vscode.languages.registerInlineValuesProvider('markdown', {
+	context.subscriptions.push(vscode.languages.registerInlineValuesProvider('lua', {
 
-		provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : vscode.ProviderResult<vscode.InlineValue[]> {
+		provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): vscode.ProviderResult<vscode.InlineValue[]> {
 
 			const allValues: vscode.InlineValue[] = [];
 
@@ -152,7 +120,7 @@ export function activateMockDebug(context: vscode.ExtensionContext, factory?: vs
 	}));
 }
 
-class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
+class RomLuaConfigurationProvider implements vscode.DebugConfigurationProvider {
 
 	/**
 	 * Massage a debug configuration just before a debug session is being launched,
@@ -163,8 +131,8 @@ class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 		// if launch.json is missing or empty
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
-			if (editor && editor.document.languageId === 'markdown') {
-				config.type = 'mock';
+			if (editor && editor.document.languageId === 'lua') {
+				config.type = 'rom-lua-debugger';
 				config.name = 'Launch';
 				config.request = 'launch';
 				config.program = '${file}';
@@ -182,34 +150,9 @@ class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 	}
 }
 
-export const workspaceFileAccessor: FileAccessor = {
-	isWindows: typeof process !== 'undefined' && process.platform === 'win32',
-	async readFile(path: string): Promise<Uint8Array> {
-		let uri: vscode.Uri;
-		try {
-			uri = pathToUri(path);
-		} catch (e) {
-			return new TextEncoder().encode(`cannot read '${path}'`);
-		}
-
-		return await vscode.workspace.fs.readFile(uri);
-	},
-	async writeFile(path: string, contents: Uint8Array) {
-		await vscode.workspace.fs.writeFile(pathToUri(path), contents);
-	}
-};
-
-function pathToUri(path: string) {
-	try {
-		return vscode.Uri.file(path);
-	} catch (e) {
-		return vscode.Uri.parse(path);
-	}
-}
-
 class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
 
 	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
-		return new vscode.DebugAdapterInlineImplementation(new MockDebugSession(workspaceFileAccessor));
+		return new vscode.DebugAdapterInlineImplementation(new RomLuaDebugSession());
 	}
 }

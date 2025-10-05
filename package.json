@@ -1,11 +1,11 @@
 {
-  "name": "mock-debug",
-  "displayName": "Mock Debug",
-  "version": "0.52.0",
-  "publisher": "ms-vscode",
-  "description": "Starter extension for developing debug adapters for VS Code.",
+  "name": "rom-lua-debugger",
+  "displayName": "Return Of Modding Lua Debugger",
+  "version": "1.0.0",
+  "publisher": "xiaoxiao921",
+  "description": "Extension for debugging lua.",
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "xiaoxiao921"
   },
   "license": "MIT",
   "keywords": [
@@ -14,17 +14,17 @@
   "engines": {
     "vscode": "^1.66.0"
   },
-  "icon": "images/mock-debug-icon.png",
+  "icon": "images/icon.png",
   "categories": [
     "Debuggers"
   ],
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/vscode-mock-debug.git"
+    "url": "https://github.com/xiaoxiao921/ReturnOfModdingBase.git"
   },
   "bugs": {
-    "url": "https://github.com/Microsoft/vscode-mock-debug/issues"
+    "url": "https://github.com/xiaoxiao921/ReturnOfModdingBase/issues"
   },
   "scripts": {
     "compile": "tsc -p ./",
@@ -66,9 +66,9 @@
   "main": "./dist/extension.js",
   "browser": "./dist/web-extension.js",
   "activationEvents": [
-    "onDebugResolve:mock",
-    "onDebugDynamicConfigurations:mock",
-    "onCommand:extension.mock-debug.getProgramName"
+    "onDebugResolve:rom-lua-debugger",
+    "onDebugDynamicConfigurations:rom-lua-debugger",
+    "onCommand:extension.rom-lua-debugger.getProgramName"
   ],
   "workspaceTrust": {
     "request": "never"
@@ -77,65 +77,55 @@
     "menus": {
       "editor/title/run": [
         {
-          "command": "extension.mock-debug.runEditorContents",
-          "when": "resourceLangId == markdown",
+          "command": "extension.rom-lua-debugger.runEditorContents",
+          "when": "resourceLangId == lua",
           "group": "navigation@1"
         },
         {
-          "command": "extension.mock-debug.debugEditorContents",
-          "when": "resourceLangId == markdown",
+          "command": "extension.rom-lua-debugger.debugEditorContents",
+          "when": "resourceLangId == lua",
           "group": "navigation@2"
         }
       ],
       "commandPalette": [
         {
-          "command": "extension.mock-debug.debugEditorContents",
-          "when": "resourceLangId == markdown"
+          "command": "extension.rom-lua-debugger.debugEditorContents",
+          "when": "resourceLangId == lua"
         },
         {
-          "command": "extension.mock-debug.runEditorContents",
-          "when": "resourceLangId == markdown"
-        }
-      ],
-      "debug/variables/context": [
-        {
-          "command": "extension.mock-debug.toggleFormatting",
-          "when": "debugType == 'mock' && debugProtocolVariableMenuContext == 'simple'"
+          "command": "extension.rom-lua-debugger.runEditorContents",
+          "when": "resourceLangId == lua"
         }
       ]
     },
     "commands": [
       {
-        "command": "extension.mock-debug.debugEditorContents",
+        "command": "extension.rom-lua-debugger.debugEditorContents",
         "title": "Debug File",
-        "category": "Mock Debug",
+        "category": "Return Of Modding Lua Debug",
         "enablement": "!inDebugMode",
         "icon": "$(debug-alt)"
       },
       {
-        "command": "extension.mock-debug.runEditorContents",
+        "command": "extension.rom-lua-debugger.runEditorContents",
         "title": "Run File",
-        "category": "Mock Debug",
+        "category": "Return Of Modding Lua Debug",
         "enablement": "!inDebugMode",
         "icon": "$(play)"
-      },
-      {
-        "command": "extension.mock-debug.toggleFormatting",
-        "title": "Toggle between decimal and hex formatting"
       }
     ],
     "breakpoints": [
       {
-        "language": "markdown"
+        "language": "lua"
       }
     ],
     "debuggers": [
       {
-        "type": "mock",
+        "type": "rom-lua-debugger",
         "languages": [
-          "markdown"
+          "lua"
         ],
-        "label": "Mock Debug",
+        "label": "Return Of Modding Lua Debugger",
         "program": "./out/debugAdapter.js",
         "runtime": "node",
         "configurationAttributes": {
@@ -158,20 +148,6 @@
                 "type": "boolean",
                 "description": "Enable logging of the Debug Adapter Protocol.",
                 "default": true
-              },
-              "compileError": {
-                "type": "string",
-                "description": "Simulates a compile error in 'launch' request.",
-                "enum": [
-                  "default",
-                  "show",
-                  "hide"
-                ],
-                "enumDescriptions": [
-                  "default: show fake compile error to user",
-                  "show fake compile error to user",
-                  "do not show fake compile error to user"
-                ]
               }
             }
           },
@@ -194,27 +170,13 @@
                 "type": "boolean",
                 "description": "Enable logging of the Debug Adapter Protocol.",
                 "default": true
-              },
-              "compileError": {
-                "type": "string",
-                "description": "Simulates a compile error in 'attach' request.",
-                "enum": [
-                  "default",
-                  "show",
-                  "hide"
-                ],
-                "enumDescriptions": [
-                  "default: show fake compile error to user",
-                  "show fake compile error to user",
-                  "do not show fake compile error to user"
-                ]
               }
             }
           }
         },
         "initialConfigurations": [
           {
-            "type": "mock",
+            "type": "rom-lua-debugger",
             "request": "launch",
             "name": "Ask for file name",
             "program": "${workspaceFolder}/${command:AskForProgramName}",
@@ -223,10 +185,10 @@
         ],
         "configurationSnippets": [
           {
-            "label": "Mock Debug: Launch",
-            "description": "A new configuration for 'debugging' a user selected markdown file.",
+            "label": "ReturnOfModding Lua Debugger: Launch",
+            "description": "A new configuration for 'debugging' a user selected lua file.",
             "body": {
-              "type": "mock",
+              "type": "rom-lua-debugger",
               "request": "launch",
               "name": "Ask for file name",
               "program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
@@ -235,7 +197,7 @@
           }
         ],
         "variables": {
-          "AskForProgramName": "extension.mock-debug.getProgramName"
+          "AskForProgramName": "extension.rom-lua-debugger.getProgramName"
         }
       }
     ]
